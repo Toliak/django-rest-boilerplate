@@ -3,3 +3,4 @@ local.py
 .idea
 .vs
 venv*
+db.sqlite3
