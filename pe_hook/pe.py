@@ -20,9 +20,6 @@ def send_pe_message(title: str, description: str, type_m: str = "DEBUG"):
             "type": type_m,
         })
 
-    print(r)
-    print(r.text)
-
 
 def capture_exception(exception: Exception):
     trace: str = traceback.format_exc()

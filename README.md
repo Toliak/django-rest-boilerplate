@@ -17,6 +17,7 @@ Quick start project template with Django Rest Framework.
 * Local `.env` config (git-ignored by default, [the example](#📄-.env-file))
 * Dockerfile for the project and
   for [static files serving](#📫-Dockerfile-&-Static-files)
+* Localization files
 * ⚠ [PurpleEntry](https://pe.toliak.ru/) as log collecting service
 * ⚠ Deploy configs for [Nomad](https://www.nomadproject.io/)
 * ⚠ Uses [Vault](https://www.vaultproject.io/) as credentials store

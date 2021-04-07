@@ -1,5 +1,6 @@
 from django.core import validators
 from django.db import models
+from django.db.models import QuerySet
 from django.utils.translation import gettext_lazy as _
 from model_utils.managers import InheritanceManager
 from stdimage import StdImageField
@@ -44,6 +45,17 @@ class CatalogItem(DateTrackerMixin, models.Model):
                                 verbose_name=_('Material'))
 
     objects = InheritanceManager()
+
+    @property
+    def images(self) -> QuerySet:
+        return CatalogItemImage.objects.filter(item=self)
+
+    def __str__(self) -> str:
+        return self.name
+
+    class Meta:
+        verbose_name = _('Catalog. Item')
+        verbose_name_plural = _('Catalog. Items')
 
 
 class CatalogItemImage(DateTrackerMixin, models.Model):

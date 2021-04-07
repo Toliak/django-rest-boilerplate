@@ -2,5 +2,6 @@
 
 set -e
 
-celery -A myproject worker  --loglevel=INFO \
-                            --concurrency=2
+celery -A myproject.core worker \
+                         --loglevel=INFO \
+                         --concurrency=2

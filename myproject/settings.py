@@ -10,14 +10,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
-from myproject.config import errors
-
-# Errors capturing with pe.toliak.ru
-# Should be before all imports
-
-PE_TOKEN = errors.PE_TOKEN
-PE_URL = errors.PE_URL
-
 import os
 from pathlib import Path
 
@@ -65,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'pe_hook.middlewares.PurpleEntryExceptionHandler',
 ]
 
 ROOT_URLCONF = 'myproject.urls'
