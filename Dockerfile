@@ -4,7 +4,7 @@ WORKDIR /project/
 COPY requirements.txt requirements.txt
 
 RUN apt-get update -y && \
-    apt-get install -y gcc && \
+    apt-get install -y gcc libpq-dev python3-dev gettext && \
     pip install -r requirements.txt && \
     apt-get remove -y gcc
 

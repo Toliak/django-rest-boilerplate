@@ -60,7 +60,7 @@ test:
 
   before_script:
     - apt-get update -y
-    - apt-get install -y gcc
+    - apt-get install -y gcc libpq-dev python3-dev gettext
     - pip install -r requirements.txt
 
   script:
@@ -80,7 +80,7 @@ build_static:
 
   before_script:
     - apt-get update -y
-    - apt-get install -y gcc
+    - apt-get install -y gcc libpq-dev python3-dev gettext
     - pip install -r requirements.txt
 
   stage: build
