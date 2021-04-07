@@ -157,6 +157,8 @@ LOGGING = {
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
 
+# Change to `ru-ru` to view the localization
+# user `manage.py compilemessages` to apply localization
 LANGUAGE_CODE = 'en-us'
 LOCALE_PATHS = (
     os.path.join(BASE_DIR, "myproject/locale"),
