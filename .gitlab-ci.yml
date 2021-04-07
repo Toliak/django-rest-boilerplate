@@ -1,0 +1,212 @@
+.env_docker: &env_docker
+  image: docker:18.09.7
+
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+
+  services:
+    - docker:18.09.7-dind
+
+.vault: &vault
+  before_script:
+    - apk add unzip
+    - wget https://releases.hashicorp.com/vault/1.7.0/vault_1.7.0_linux_amd64.zip -O vault.zip
+    - unzip vault.zip
+    - mv vault /bin/vault
+    - chmod +x /bin/vault
+    - rm vault.zip
+
+stages:
+  - tests
+  - build
+  - build_docker
+  - nomad
+
+variables:
+  VAULT_ADDR: "http://vault.example.com"
+  DOCKER_REGISTRY: "registry.example.com"
+  NOMAD_DEPLOYER_ADDR: "http://skeak.example.com:4656"
+  DOCKER_IMAGE: "myproject-backend"
+  DOCKER_IMAGE_STATIC: "myproject-static"
+
+
+test:
+  image: python:3.7.8-slim-stretch
+
+  services:
+    - postgres:12.2-alpine
+
+  variables:
+    POSTGRES_DB: myproject
+    POSTGRES_USER: myproject
+    POSTGRES_PASSWORD: myproject
+    POSTGRES_HOST_AUTH_METHOD: trust
+    APP_DEBUG: "True"
+    SECRET_KEY: "top secret key"
+    DB_DRIVER: "django.db.backends.postgresql_psycopg2"
+    DB_USERNAME: myproject
+    DB_PASSWORD: myproject
+    DB_NAME: myproject
+    DB_HOST: postgres
+    EMAIL_HOST: "smtp.yandex.ru"
+    EMAIL_HOST_USER: "user@domain.com"
+    EMAIL_HOST_PASSWORD: "password"
+    EMAIL_USE_TLS: "True"
+    EMAIL_TO: "[\"test@test.test\"]"
+    CELERY_BROKER_URL: ""
+    PE_TOKEN: ""
+
+  stage: tests
+
+  before_script:
+    - apt-get update -y
+    - apt-get install -y gcc
+    - pip install -r requirements.txt
+
+  script:
+    - mkdir -p static
+    - mkdir -p media/temp
+    - ./scripts/run-pytest.sh
+
+
+build_static:
+  image: python:3.7.8-slim-stretch
+
+  variables:
+    SECRET_KEY: "top secret key"
+
+  only:
+    - master
+
+  before_script:
+    - apt-get update -y
+    - apt-get install -y gcc
+    - pip install -r requirements.txt
+
+  stage: build
+
+  script:
+    - python manage.py collectstatic --noinput
+
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}_build
+    paths:
+      - static/
+    policy: push
+
+
+build_docker:
+  <<: *env_docker
+  <<: *vault
+
+  stage: build_docker
+  only:
+    - develop
+    - /^release\/.*$/
+    - master
+
+  script:
+    - if [ "$CI_COMMIT_BRANCH" == "master" ]; then export TAG=latest; else export TAG=$CI_COMMIT_BRANCH; fi
+    - echo TAG=$TAG
+    - export VAULT_TOKEN="$(vault write -field=token auth/jwt/login role=gitlab-myproject-backend jwt=$CI_JOB_JWT)"
+    - export DOCKER_REGISTRY_LOGIN=$(vault kv get -field=USERNAME registry/gitlab)
+    - export DOCKER_REGISTRY_PASSWORD=$(vault kv get -field=PASSWORD registry/gitlab)
+    - docker login ${DOCKER_REGISTRY} --username ${DOCKER_REGISTRY_LOGIN} --password ${DOCKER_REGISTRY_PASSWORD}
+    - echo Building...
+    - docker build . -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${CI_COMMIT_SHORT_SHA}
+    - docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${CI_COMMIT_SHORT_SHA}
+
+
+build_docker_static:
+  <<: *env_docker
+  <<: *vault
+
+  stage: build_docker
+  only:
+    - master
+
+  script:
+    - export VAULT_TOKEN="$(vault write -field=token auth/jwt/login role=gitlab-myproject-backend jwt=$CI_JOB_JWT)"
+    - export DOCKER_REGISTRY_LOGIN=$(vault kv get -field=USERNAME registry/gitlab)
+    - export DOCKER_REGISTRY_PASSWORD=$(vault kv get -field=PASSWORD registry/gitlab)
+    - docker login ${DOCKER_REGISTRY} --username ${DOCKER_REGISTRY_LOGIN} --password ${DOCKER_REGISTRY_PASSWORD}
+    - echo Building...
+    - docker build . -f Static.Dockerfile -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_STATIC}:${CI_COMMIT_SHORT_SHA}
+    - docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE_STATIC}:${CI_COMMIT_SHORT_SHA}
+
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}_build
+    paths:
+      - static/
+    policy: pull
+
+
+nomad_migrate:
+  image: debian:stretch-20200607-slim
+
+  stage: nomad
+  only:
+    - develop
+    - /^release\/.*$/
+    - master
+  when: manual
+
+  before_script:
+    - apt-get update -y
+    - apt-get install -y gettext-base curl
+
+  script:
+    - if [ "$CI_COMMIT_BRANCH" == "master" ]; then export FILENAME="migrate-prod"; else export FILENAME="migrate-dev"; fi
+    - echo FILENAME=$FILENAME
+    - cd nomad
+    - envsubst '$CI_COMMIT_SHORT_SHA' < ${FILENAME}.nomad > job1.nomad
+    - envsubst '$DOCKER_IMAGE' < job1.nomad > job2.nomad
+    - envsubst '$DOCKER_REGISTRY' < job2.nomad > job.nomad
+    - cat job.nomad
+    - curl -s "https://gitlab.toliak.ru/Toliak/nomad-deployer/-/raw/master/deployer.sh" | bash -s "myproject-backend-${FILENAME}" "job.nomad" "${NOMAD_DEPLOYER_ADDR}" "${CI_JOB_JWT}"
+
+
+nomad_deploy:
+  image: debian:stretch-20200607-slim
+
+  stage: nomad
+  only:
+    - develop
+    - /^release\/.*$/
+    - master
+  when: manual
+
+  before_script:
+    - apt-get update -y
+    - apt-get install -y gettext-base curl
+
+  script:
+    - if [ "$CI_COMMIT_BRANCH" == "master" ]; then export FILENAME="prod"; else export FILENAME="dev"; fi
+    - echo FILENAME=$FILENAME
+    - cd nomad
+    - envsubst '$CI_COMMIT_SHORT_SHA' < project-${FILENAME}.nomad > job1.nomad
+    - envsubst '$DOCKER_IMAGE' < job1.nomad > job2.nomad
+    - envsubst '$DOCKER_REGISTRY' < job2.nomad > job.nomad
+    - cat job.nomad
+    - curl -s "https://gitlab.toliak.ru/Toliak/nomad-deployer/-/raw/master/deployer.sh" | bash -s "myproject-backend-${FILENAME}" "job.nomad" "${NOMAD_DEPLOYER_ADDR}" "${CI_JOB_JWT}"
+
+
+nomad_deploy_static:
+  image: debian:stretch-20200607-slim
+
+  stage: nomad
+  only:
+    - master
+  when: manual
+
+  before_script:
+    - apt-get update -y
+    - apt-get install -y gettext-base curl
+
+  script:
+    - cd nomad
+    - envsubst '$CI_COMMIT_SHORT_SHA' < static-prod.nomad > job1.nomad
+    - envsubst '$DOCKER_IMAGE_STATIC' < job1.nomad > job2.nomad
+    - envsubst '$DOCKER_REGISTRY' < job2.nomad > job.nomad
+    - cat job.nomad
+    - curl -s "https://gitlab.toliak.ru/Toliak/nomad-deployer/-/raw/master/deployer.sh" | bash -s "myproject-static-prod" "job.nomad" "${NOMAD_DEPLOYER_ADDR}" "${CI_JOB_JWT}"

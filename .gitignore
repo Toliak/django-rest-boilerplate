@@ -4,4 +4,4 @@ local.py
 .vs
 venv*
 db.sqlite3
-.env
+myproject/config/.env
