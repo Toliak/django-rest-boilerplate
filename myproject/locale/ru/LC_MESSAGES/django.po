@@ -1,0 +1,83 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Use `manage.py compilemessages` to apply localization
+
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-04-07 18:51+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n"
+"%100>=11 && n%100<=14)? 2 : 3);\n"
+
+#: myproject/core/models.py:11
+msgid "Date created"
+msgstr "Дата создания"
+
+#: myproject/core/models.py:13
+msgid "Date modified"
+msgstr "Дата модификации"
+
+#: myproject/core/models.py:21
+msgid "Something"
+msgstr "Пример"
+
+#: myproject/core/models.py:27
+msgid "Item category"
+msgstr "Категория товара"
+
+#: myproject/core/models.py:31
+msgid "Name"
+msgstr "Название"
+
+#: myproject/core/models.py:33
+msgid "Price"
+msgstr "Цена"
+
+#: myproject/core/models.py:35
+msgid "Brief description"
+msgstr "Кр. описание"
+
+#: myproject/core/models.py:40
+msgid "Weight, kg"
+msgstr "Вес, кг"
+
+#: myproject/core/models.py:45
+msgid "Material"
+msgstr "Материал"
+
+#: myproject/core/models.py:57
+msgid "Catalog. Item"
+msgstr "Каталог. Товар"
+
+#: myproject/core/models.py:58
+msgid "Catalog. Items"
+msgstr "Каталог. Товары"
+
+#: myproject/core/models.py:65
+msgid "Catalog item"
+msgstr "Товар каталога"
+
+#: myproject/core/models.py:71
+msgid "Image"
+msgstr "Изображение"
+
+#: myproject/core/models.py:78
+msgid "Catalog. Image"
+msgstr "Каталог. Изобр-е"
+
+#: myproject/core/models.py:79
+msgid "Catalog. Images"
+msgstr "Каталог. Изобр-я"
