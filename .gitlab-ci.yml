@@ -7,27 +7,18 @@
   services:
     - docker:18.09.7-dind
 
-.vault: &vault
-  before_script:
-    - apk add unzip
-    - wget https://releases.hashicorp.com/vault/1.7.0/vault_1.7.0_linux_amd64.zip -O vault.zip
-    - unzip vault.zip
-    - mv vault /bin/vault
-    - chmod +x /bin/vault
-    - rm vault.zip
-
 stages:
   - tests
   - build
   - build_docker
-  - nomad
+  - rancher
 
 variables:
-  VAULT_ADDR: "http://vault.example.com"
-  DOCKER_REGISTRY: "registry.example.com"
-  NOMAD_DEPLOYER_ADDR: "http://skeak.example.com:4656"
+  K8S_SECRETS: "my-project"
+  K8S_SECRETS_REGISTRY: "my-registry"
+  RANCHER_URL: "https://rancher.example.com"
+  REGISTRY_URL: "registry.example.com"
   DOCKER_IMAGE: "myproject-backend"
-  DOCKER_IMAGE_STATIC: "myproject-static"
 
 
 test:
@@ -55,6 +46,10 @@ test:
     EMAIL_TO: "[\"test@test.test\"]"
     CELERY_BROKER_URL: ""
     PE_TOKEN: ""
+    AWS_ACCESS_KEY: "access-key"
+    AWS_SECRET_KEY: "secret-key"
+    AWS_BUCKET_NAME: "bucket-name"
+    AWS_ENDPOINT_URL: "https://s3-domain.com"
 
   stage: tests
 
@@ -69,35 +64,8 @@ test:
     - ./scripts/run-tests.sh
 
 
-build_static:
-  image: python:3.7.8-slim-stretch
-
-  variables:
-    SECRET_KEY: "top secret key"
-
-  only:
-    - master
-
-  before_script:
-    - apt-get update -y
-    - apt-get install -y gcc libpq-dev python3-dev gettext
-    - pip install -r requirements.txt
-
-  stage: build
-
-  script:
-    - python manage.py collectstatic --noinput
-
-  cache:
-    key: ${CI_COMMIT_REF_SLUG}_build
-    paths:
-      - static/
-    policy: push
-
-
 build_docker:
   <<: *env_docker
-  <<: *vault
 
   stage: build_docker
   only:
@@ -106,107 +74,28 @@ build_docker:
     - master
 
   script:
-    - if [ "$CI_COMMIT_BRANCH" == "master" ]; then export TAG=latest; else export TAG=$CI_COMMIT_BRANCH; fi
-    - echo TAG=$TAG
-    - export VAULT_TOKEN="$(vault write -field=token auth/jwt/login role=gitlab-myproject-backend jwt=$CI_JOB_JWT)"
-    - export DOCKER_REGISTRY_LOGIN=$(vault kv get -field=USERNAME registry/gitlab)
-    - export DOCKER_REGISTRY_PASSWORD=$(vault kv get -field=PASSWORD registry/gitlab)
-    - docker login ${DOCKER_REGISTRY} --username ${DOCKER_REGISTRY_LOGIN} --password ${DOCKER_REGISTRY_PASSWORD}
-    - echo Building...
-    - docker build . -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${CI_COMMIT_SHORT_SHA}
-    - docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${CI_COMMIT_SHORT_SHA}
+    - docker login ${REGISTRY_URL} --username ${REGISTRY_USERNAME} --password ${REGISTRY_PASSWORD}
+    - docker build . -t ${REGISTRY_URL}/${DOCKER_IMAGE}
+    - docker push ${REGISTRY_URL}/${DOCKER_IMAGE}
 
 
-build_docker_static:
-  <<: *env_docker
-  <<: *vault
+rancher:
+  image: jonaskello/rancher-cli-k8s:v2.0.4
 
-  stage: build_docker
+  stage: rancher
   only:
     - master
 
   script:
-    - export VAULT_TOKEN="$(vault write -field=token auth/jwt/login role=gitlab-myproject-backend jwt=$CI_JOB_JWT)"
-    - export DOCKER_REGISTRY_LOGIN=$(vault kv get -field=USERNAME registry/gitlab)
-    - export DOCKER_REGISTRY_PASSWORD=$(vault kv get -field=PASSWORD registry/gitlab)
-    - docker login ${DOCKER_REGISTRY} --username ${DOCKER_REGISTRY_LOGIN} --password ${DOCKER_REGISTRY_PASSWORD}
-    - echo Building...
-    - docker build . -f Static.Dockerfile -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_STATIC}:${CI_COMMIT_SHORT_SHA}
-    - docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE_STATIC}:${CI_COMMIT_SHORT_SHA}
-
-  cache:
-    key: ${CI_COMMIT_REF_SLUG}_build
-    paths:
-      - static/
-    policy: pull
+    - /bin/sh scripts/rancher-patch.sh
 
 
-nomad_migrate:
-  image: debian:stretch-20200607-slim
+rancher_migrate:
+  image: jonaskello/rancher-cli-k8s:v2.0.4
 
-  stage: nomad
-  only:
-    - develop
-    - /^release\/.*$/
-    - master
-  when: manual
-
-  before_script:
-    - apt-get update -y
-    - apt-get install -y gettext-base curl
-
-  script:
-    - if [ "$CI_COMMIT_BRANCH" == "master" ]; then export FILENAME="migrate-prod"; else export FILENAME="migrate-dev"; fi
-    - echo FILENAME=$FILENAME
-    - cd nomad
-    - envsubst '$CI_COMMIT_SHORT_SHA' < ${FILENAME}.nomad > job1.nomad
-    - envsubst '$DOCKER_IMAGE' < job1.nomad > job2.nomad
-    - envsubst '$DOCKER_REGISTRY' < job2.nomad > job.nomad
-    - cat job.nomad
-    - curl -s "https://gitlab.toliak.ru/Toliak/nomad-deployer/-/raw/master/deployer.sh" | bash -s "myproject-backend-${FILENAME}" "job.nomad" "${NOMAD_DEPLOYER_ADDR}" "${CI_JOB_JWT}"
-
-
-nomad_deploy:
-  image: debian:stretch-20200607-slim
-
-  stage: nomad
-  only:
-    - develop
-    - /^release\/.*$/
-    - master
-  when: manual
-
-  before_script:
-    - apt-get update -y
-    - apt-get install -y gettext-base curl
-
-  script:
-    - if [ "$CI_COMMIT_BRANCH" == "master" ]; then export FILENAME="prod"; else export FILENAME="dev"; fi
-    - echo FILENAME=$FILENAME
-    - cd nomad
-    - envsubst '$CI_COMMIT_SHORT_SHA' < project-${FILENAME}.nomad > job1.nomad
-    - envsubst '$DOCKER_IMAGE' < job1.nomad > job2.nomad
-    - envsubst '$DOCKER_REGISTRY' < job2.nomad > job.nomad
-    - cat job.nomad
-    - curl -s "https://gitlab.toliak.ru/Toliak/nomad-deployer/-/raw/master/deployer.sh" | bash -s "myproject-backend-${FILENAME}" "job.nomad" "${NOMAD_DEPLOYER_ADDR}" "${CI_JOB_JWT}"
-
-
-nomad_deploy_static:
-  image: debian:stretch-20200607-slim
-
-  stage: nomad
+  stage: rancher
   only:
     - master
-  when: manual
-
-  before_script:
-    - apt-get update -y
-    - apt-get install -y gettext-base curl
 
   script:
-    - cd nomad
-    - envsubst '$CI_COMMIT_SHORT_SHA' < static-prod.nomad > job1.nomad
-    - envsubst '$DOCKER_IMAGE_STATIC' < job1.nomad > job2.nomad
-    - envsubst '$DOCKER_REGISTRY' < job2.nomad > job.nomad
-    - cat job.nomad
-    - curl -s "https://gitlab.toliak.ru/Toliak/nomad-deployer/-/raw/master/deployer.sh" | bash -s "myproject-static-prod" "job.nomad" "${NOMAD_DEPLOYER_ADDR}" "${CI_JOB_JWT}"
+    - /bin/sh scripts/rancher-migrate.sh

@@ -13,8 +13,6 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 import os
 from pathlib import Path
 
-import django_archive.archivers
-
 from myproject import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -43,9 +41,9 @@ INSTALLED_APPS = [
     'myproject.core.apps.CoreConfig',
     'django_summernote',
     'rest_framework',
-    'django_archive',
     'stdimage',
-
+    'storages',
+    'dbbackup',  # django-dbbackup
 ]
 
 MIDDLEWARE = [
@@ -178,14 +176,40 @@ ROOT_URL = 'api/'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
+# Using AWS S3
 
-STATIC_URL = f'/{ROOT_URL}static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+# AWS Settings
 
-# Media files
+AWS_ACCESS_KEY_ID = config.AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY = config.AWS_SECRET_ACCESS_KEY
+AWS_STORAGE_BUCKET_NAME = config.AWS_STORAGE_BUCKET_NAME
+AWS_DEFAULT_ACL = 'public-read'
+AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+AWS_S3_ENDPOINT_URL = config.AWS_S3_ENDPOINT_URL
 
-MEDIA_URL = f'/{ROOT_URL}media/'
-MEDIA_ROOT = "media"
+# S3 Static Settings
+STATIC_AWS_LOCATION = 'static'
+STATIC_URL = f'{AWS_S3_ENDPOINT_URL}/{STATIC_AWS_LOCATION}/'
+STATICFILES_STORAGE = 'myproject.config.storage.StaticStorage'
+
+# S3 Media files settings
+
+MEDIA_AWS_LOCATION = 'media'
+MEDIA_URL = f'{AWS_S3_ENDPOINT_URL}/{MEDIA_AWS_LOCATION}/'
+DEFAULT_FILE_STORAGE = 'myproject.config.storage.PublicMediaStorage'
+
+PRIVATE_MEDIA_AWS_LOCATION = 'private'
+PRIVATE_FILE_STORAGE = 'myproject.config.storage.PrivateMediaStorage'
+
+## Default static setting
+
+# STATIC_URL = f'/{ROOT_URL}static/'
+# STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+## Default media settings
+
+# MEDIA_URL = f'/{ROOT_URL}media/'
+# MEDIA_ROOT = "media"
 
 # Email setup
 
@@ -203,7 +227,13 @@ EMAIL_TO = config.EMAIL_TO
 
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 
-# Django-archive settings
+# Django DBBackup settings
 
-ARCHIVE_DIRECTORY = os.path.join(BASE_DIR, 'backups')
-ARCHIVE_FORMAT = django_archive.archivers.TARBALL_GZ
+DBBACKUP_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+DBBACKUP_STORAGE_OPTIONS = {
+    "access_key": AWS_ACCESS_KEY_ID,
+    "secret_key": AWS_SECRET_ACCESS_KEY,
+    "bucket_name": AWS_STORAGE_BUCKET_NAME,
+    "location": "backup/",
+    "endpoint_url": AWS_S3_ENDPOINT_URL,
+}

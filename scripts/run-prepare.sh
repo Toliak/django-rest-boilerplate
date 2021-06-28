@@ -2,16 +2,18 @@
 
 set -e
 
+echo Creating backup...
+python manage.py dbbackup
+python manage.py mediabackup
+
 echo Migrating...
 python manage.py migrate
-
-# Unfortunately, backup cannot be created without migrations
-echo Creating backup...
-mkdir -p backups
-./manage.py archive
 
 echo Regenerating STDImage variations...
 
 # TODO: insert your image models here
 # Example below:
 ./manage.py rendervariations "core.CatalogItemImage.image" -i
+
+echo Collecting static...
+python manage.py collectstatic --noinput

@@ -9,19 +9,19 @@ Quick start project template with Django Rest Framework.
   , [Summernote](https://github.com/summernote/django-summernote) for Django
   Admin
 * Configuration for email sending
-* [Django Archive](https://github.com/nathan-osman/django-archive) for quick
+* [Django DBBackup](https://django-dbbackup.readthedocs.io/en/master/index.html) for quick
   backups
 * Celery for asynchronous tasks
 * PyTest as testing framework
 * Gitlab CI config for deployments
+  - Docker Image into the private docker registry
+  - Delivery into K8S Rancher
 * Local `.env` config (git-ignored by default, [the example](#-env-file))
 * Dockerfile for the project and
   for [static files serving](#-dockerfile--static-files)
 * Localization files
+* S3 for Media, Static and Backups
 * ⚠ [PurpleEntry](https://pe.toliak.ru/) as log collecting service
-* ⚠ Deploy configs for [Nomad](https://www.nomadproject.io/)
-* ⚠ Uses [Vault](https://www.vaultproject.io/) as credentials store
-* ⚠ WIP: ~~S3 Static and media~~
 
 ## ❓ How to setup the project
 
@@ -32,7 +32,6 @@ Quick start project template with Django Rest Framework.
 
 * `scripts` -- folder with bash scripts
 * `myproject` -- django project
-* `nomad` -- folder with nomad configs
 
 ## 📄 .env file
 
@@ -42,7 +41,36 @@ Example file located [here](myproject/config/.env.sample)
 
 Example configuration file
 
-## 📫 Dockerfile & Static files
+## 📫 Static files
 
-The [`Static.Dockerfile`](Static.Dockerfile) file can be used to serve static
-and media files. 
+AWS S3 storage can be used for serving static and media files.
+
+# CI CD Guide
+
+CI CD Prepared for Gitlab CI.
+
+## Variables
+
+### `gitlab-ci.yml`
+
+|Name|Description|Example|
+|---|---|---|
+|RANCHER_URL|URL to rancher|`https://rancher.int.toliak.ru`|
+|RANCHER_DEPLOYMENT|(Optional) Deployment name|`my-deployment`|
+|DOCKER_IMAGE|Image with tag|`$CI_PROJECT_NAME:$CI_COMMIT_SHORT_SHA`|
+|REGISTRY_URL|Url to Docker Registry|`registry.toliak.ru`|
+|K8S_SECRETS|Secret path in K8S|`my-project`|
+|K8S_SECRETS_REGISTRY|Secret path registry in K8S|`my-registry`|
+
+### Project 
+
+|Name|Description|Example|
+|---|---|---|
+|RANCHER_TOKEN|Rancher API **Bearer** Token|`token-adfsdf:asdijasd...iasjd`|
+|REGISTRY_USERNAME|Docker Registry Username|`asdadasd`|
+|REGISTRY_PASSWORD|Docker Registry Password|`asdasdas`|
+
+# Backups
+
+Using `django-dbbackup`.
+Backup will be stored into S3 Bucket.

@@ -34,3 +34,9 @@ except json.JSONDecodeError as e:
 
 # For async tasks
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
+
+# S3
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_KEY')
+AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_BUCKET_NAME')
+AWS_S3_ENDPOINT_URL = os.getenv('AWS_ENDPOINT_URL')
