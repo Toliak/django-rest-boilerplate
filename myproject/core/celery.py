@@ -8,7 +8,7 @@ from django.conf import settings
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
 
-app = Celery('word_track')
+app = Celery('myproject')
 
 # Using a string here means the worker doesn't have to serialize
 # the configuration object to child processes.
