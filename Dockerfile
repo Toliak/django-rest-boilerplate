@@ -11,7 +11,7 @@ RUN apt-get update -y && \
     apt-get install -y gcc \
                        libpq-dev \
                        python3-dev \
-                       gettext
+                       gettext \
                        postgresql-client-13 && \
     pip install -r requirements.txt && \
     apt-get remove -y gcc
