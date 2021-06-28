@@ -14,11 +14,11 @@ stages:
   - rancher
 
 variables:
-  K8S_SECRETS: "my-project"
-  K8S_SECRETS_REGISTRY: "my-registry"
-  RANCHER_URL: "https://rancher.example.com"
-  REGISTRY_URL: "registry.example.com"
-  DOCKER_IMAGE: "myproject-backend"
+  K8S_SECRETS: "purple-bots"
+  K8S_SECRETS_REGISTRY: "registry-toliak-ru"
+  RANCHER_URL: "https://rancher.int.toliak.ru"
+  REGISTRY_URL: "registry.toliak.ru"
+  DOCKER_IMAGE: "purple-bots"
 
 
 test:
@@ -82,6 +82,7 @@ build_docker:
 rancher:
   image: jonaskello/rancher-cli-k8s:v2.0.4
 
+  when: manual
   stage: rancher
   only:
     - master
@@ -93,6 +94,7 @@ rancher:
 rancher_migrate:
   image: jonaskello/rancher-cli-k8s:v2.0.4
 
+  when: manual
   stage: rancher
   only:
     - master
