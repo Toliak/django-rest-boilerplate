@@ -4,11 +4,15 @@ WORKDIR /project/
 COPY requirements.txt requirements.txt
 
 RUN apt-get update -y && \
+    apt-get -y install gnupg2 && \
+    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+    echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | tee  /etc/apt/sources.list.d/pgdg.list && \
+    apt-get update -y && \
     apt-get install -y gcc \
                        libpq-dev \
                        python3-dev \
-                       gettext \
-                       postgresql-client && \
+                       gettext
+                       postgresql-client-13 && \
     pip install -r requirements.txt && \
     apt-get remove -y gcc
 

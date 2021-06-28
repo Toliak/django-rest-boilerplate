@@ -25,7 +25,7 @@ test:
   image: python:3.7.8-slim-stretch
 
   services:
-    - postgres:12.2-alpine
+    - postgres:13.3-alpine
 
   variables:
     POSTGRES_DB: db_name
@@ -79,7 +79,7 @@ rancher:
 rancher_celery:
   image: jonaskello/rancher-cli-k8s:v2.0.4
   variables:
-    RANCHER_DEPLOYMENT: "${CI_PROJECT_NAME}-celery"
+    RANCHER_DEPLOYMENT: "purple-bots-celery"
 
   when: manual
   stage: rancher
@@ -92,7 +92,7 @@ rancher_celery:
 rancher_celery_beat:
   image: jonaskello/rancher-cli-k8s:v2.0.4
   variables:
-    RANCHER_DEPLOYMENT: "${CI_PROJECT_NAME}-celery-beat"
+    RANCHER_DEPLOYMENT: "purple-bots-celery-beat"
 
   when: manual
   stage: rancher
