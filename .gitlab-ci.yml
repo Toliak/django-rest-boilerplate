@@ -18,7 +18,8 @@ variables:
   K8S_SECRETS_REGISTRY: "registry-toliak-ru"
   RANCHER_URL: "https://rancher.int.toliak.ru"
   REGISTRY_URL: "registry.toliak.ru"
-  DOCKER_IMAGE: "purple-bots"
+  DOCKER_IMAGE: "purple-bots:$CI_COMMIT_SHORT_SHA"
+  RANCHER_DEPLOYMENT: "purple-bots"
 
 
 test:
@@ -28,28 +29,10 @@ test:
     - postgres:12.2-alpine
 
   variables:
-    POSTGRES_DB: myproject
-    POSTGRES_USER: myproject
-    POSTGRES_PASSWORD: myproject
+    POSTGRES_DB: db_name
+    POSTGRES_USER: username
+    POSTGRES_PASSWORD: password
     POSTGRES_HOST_AUTH_METHOD: trust
-    APP_DEBUG: "True"
-    SECRET_KEY: "top secret key"
-    DB_DRIVER: "django.db.backends.postgresql_psycopg2"
-    DB_USERNAME: myproject
-    DB_PASSWORD: myproject
-    DB_NAME: myproject
-    DB_HOST: postgres
-    EMAIL_HOST: "smtp.yandex.ru"
-    EMAIL_HOST_USER: "user@domain.com"
-    EMAIL_HOST_PASSWORD: "password"
-    EMAIL_USE_TLS: "True"
-    EMAIL_TO: "[\"test@test.test\"]"
-    CELERY_BROKER_URL: ""
-    PE_TOKEN: ""
-    AWS_ACCESS_KEY: "access-key"
-    AWS_SECRET_KEY: "secret-key"
-    AWS_BUCKET_NAME: "bucket-name"
-    AWS_ENDPOINT_URL: "https://s3-domain.com"
 
   stage: tests
 
@@ -57,6 +40,10 @@ test:
     - apt-get update -y
     - apt-get install -y gcc libpq-dev python3-dev gettext
     - pip install -r requirements.txt
+    - |
+      cd myproject/config &&
+      mv .env.sample .env &&
+      cd ../..
 
   script:
     - mkdir -p static
