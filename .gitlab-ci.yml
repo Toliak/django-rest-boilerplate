@@ -90,6 +90,19 @@ rancher_celery:
   script:
     - /bin/sh scripts/rancher-patch.sh
 
+rancher_celery_beat:
+  image: jonaskello/rancher-cli-k8s:v2.0.4
+  variables:
+    RANCHER_DEPLOYMENT: "${CI_PROJECT_NAME}-celery-beat"
+
+  when: manual
+  stage: rancher
+  only:
+    - master
+
+  script:
+    - /bin/sh scripts/rancher-patch.sh
+
 
 rancher_migrate:
   image: jonaskello/rancher-cli-k8s:v2.0.4

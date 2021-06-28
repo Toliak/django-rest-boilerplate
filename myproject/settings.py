@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'myproject.core.apps.CoreConfig',
+    'django_celery_beat',
     'django_summernote',
     'rest_framework',
     'stdimage',
