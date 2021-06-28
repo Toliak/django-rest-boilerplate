@@ -81,7 +81,8 @@ build_docker:
 
 rancher:
   image: jonaskello/rancher-cli-k8s:v2.0.4
-
+  
+  when: manual
   stage: rancher
   only:
     - master
@@ -92,7 +93,8 @@ rancher:
 
 rancher_migrate:
   image: jonaskello/rancher-cli-k8s:v2.0.4
-
+  
+  when: manual
   stage: rancher
   only:
     - master
