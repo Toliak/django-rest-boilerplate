@@ -30,7 +30,7 @@ kind: Job
 metadata:
   name: $DEPLOYMENT
 spec:
-  ttlSecondsAfterFinished: 30
+  ttlSecondsAfterFinished: 300
   activeDeadlineSeconds: 60
   backoffLimit: 6
   completions: 1
